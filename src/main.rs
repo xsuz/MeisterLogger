@@ -21,7 +21,7 @@ fn main() -> io::Result<()> {
     let baud_rate: u32 = 115200;
 
     let mut app = App::new(port_name, baud_rate);
-    
+
 
     while !should_quit {
         terminal.draw(|f| ui(f, &mut app))?;
@@ -38,8 +38,9 @@ fn ui(frame: &mut Frame, _app: &mut App) {
         Constraint::Length(2),
         Constraint::Length(3),
         Constraint::Length(3),
+        Constraint::Length(3),
     ]);
-    let [title_area, servocntrl_area, alt_area] = vertical.areas(frame.size());
+    let [title_area, servocntrl_area, alt_area,imu_area] = vertical.areas(frame.size());
     frame.render_widget(Paragraph::new("Meister2024"), title_area);
 
     if let Some(data) = _app.servoctrl_data.as_ref() {
@@ -52,5 +53,11 @@ fn ui(frame: &mut Frame, _app: &mut App) {
         frame.render_widget(Paragraph::new(format!("altitude:{:>3.2}    timestamp:{:>10}",data.altitude,data.timestamp)).block(Block::bordered().title("Altimeter").title_alignment(Alignment::Center)), alt_area);
     } else {
         frame.render_widget(Paragraph::new("No data received").block(Block::default().title("Altimeter").title_alignment(Alignment::Center)), alt_area);
+    }
+
+    if let Some(data) = _app.imu_data.as_ref(){
+        frame.render_widget(Paragraph::new(format!("q_w:{:>3.2}    q_x:{:>3.2}    q_y:{:>3.2}    q_z:{:>3.2}    timestamp:{:>10}",data.q_w,data.q_x,data.q_y,data.q_z,data.timestamp)).block(Block::bordered().title("IMU").title_alignment(Alignment::Center)), imu_area);
+    } else {
+        frame.render_widget(Paragraph::new("No data received").block(Block::default().title("IMU").title_alignment(Alignment::Center)), imu_area);
     }
 }

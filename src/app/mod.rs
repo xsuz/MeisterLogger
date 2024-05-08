@@ -2,32 +2,14 @@
 use serialport::SerialPort;
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::parse::decode_cobs;
-use byteorder::{ByteOrder, BigEndian};
+use crate::parse::{decode_cobs, ServoData, AltData, IMUData, Data};
 
 pub struct App{
     pub port: Box<dyn SerialPort>,
     pub log: Vec<u8>,
     pub servoctrl_data: Option<ServoData>,
     pub alt_data: Option<AltData>,
-}
-
-pub struct ServoData{
-    pub id: u8,
-    pub timestamp: u32,
-    pub rudder:f32,
-    pub elevator:f32,
-    pub voltage:f32,
-    pub current_rudder:f32,
-    pub current_elevator:f32,
-    pub trim:f32,
-    pub status:u8,
-}
-
-pub struct AltData{
-    pub id: u8,
-    pub timestamp: u32,
-    pub altitude:f32
+    pub imu_data: Option<IMUData>,
 }
 
 impl App{
@@ -42,6 +24,7 @@ impl App{
                     log: Vec::new(),
                     servoctrl_data: None,
                     alt_data: None,
+                    imu_data: None,
                 }
             }
             Err(e) => {
@@ -59,27 +42,19 @@ impl App{
                 let (decoded, rest) = decode_cobs(self.log.clone());
                 if decoded.len() > 0 {
                     self.log = rest;
-                    if decoded[0]&0xF0 == 0x10 {
-                        let data = ServoData{
-                            id: decoded[0],
-                            timestamp: BigEndian::read_u32(&decoded[4..8]),
-                            rudder: BigEndian::read_f32(&decoded[8..13]),
-                            elevator: BigEndian::read_f32(&decoded[12..16]),
-                            voltage: BigEndian::read_f32(&decoded[16..20]),
-                            current_rudder: BigEndian::read_f32(&decoded[20..24]),
-                            current_elevator: BigEndian::read_f32(&decoded[24..28]),
-                            trim: BigEndian::read_f32(&decoded[28..32]),
-                            status: decoded[32],
-                        };
-                        self.servoctrl_data=Some(data);
-                    }
-                    if decoded[0]&0xF0 == 0x50 {
-                        let data = AltData{
-                            id: decoded[0],
-                            timestamp: BigEndian::read_u32(&decoded[4..8]),
-                            altitude: BigEndian::read_f32(&decoded[8..12]),
-                        };
-                        self.alt_data=Some(data);
+                    match decoded[0]&0xF0 {
+                        0x10 => {
+                            self.servoctrl_data=Some(ServoData::parse(&decoded));
+                        }
+                        0x40 => {
+                            self.imu_data=Some(IMUData::parse(&decoded));
+                        }
+                        0x50 => {
+                            for i in 0..5{
+                                self.alt_data=Some(AltData::parse(&decoded[i*12..(i+1)*12].to_vec()));
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
