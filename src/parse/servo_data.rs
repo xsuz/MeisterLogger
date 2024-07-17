@@ -1,6 +1,8 @@
 use byteorder::{ByteOrder, BigEndian};
 use crate::parse::Data;
 
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy)]
 pub struct ServoData{
     pub id: u8,
     pub timestamp: u32,
@@ -26,6 +28,8 @@ impl Data for ServoData{
             trim: BigEndian::read_f32(&data[28..32]),
             status: data[32],
         }
-
+    }
+    fn get_size() -> usize {
+        33
     }
 }

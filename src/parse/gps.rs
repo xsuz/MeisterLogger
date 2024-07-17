@@ -3,21 +3,23 @@ use byteorder::{BigEndian, ByteOrder};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
-pub struct AltData{
+pub struct GPSData{
     pub id: u8,
     pub timestamp: u32,
-    pub altitude:f32
+    pub longitude: f64,
+    pub latitude: f64
 }
 
-impl Data for AltData{
+impl Data for GPSData{
     fn parse(data: &Vec<u8>) -> Self{
-        AltData{
+        GPSData{
             id: data[0],
             timestamp: BigEndian::read_u32(&data[4..8]),
-            altitude: BigEndian::read_f32(&data[8..12]),
+            longitude: BigEndian::read_f64(&data[8..16]),
+            latitude: BigEndian::read_f64(&data[16..24])
         }
     }
     fn get_size() -> usize {
-        12
+        24
     }
 }
